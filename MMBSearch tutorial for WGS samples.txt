@@ -1,0 +1,385 @@
+#MMBSearch pipeline operation
+#Author: Beth Osia
+#Last updated: 8/14/2020
+
+#These instructions are based on usage with the University of Iowa's High Performance Computing Cluster Argon (https://hpc.uiowa.edu/). 
+#Argon compute nodes are running CentOS-7.4 Linux, but most likely comparable linux-based HPC systems will work with minimal changes to this protocol.  
+#HPC resources are required for this pipeline, but steps requiring arrays for parallel computation could also be run sequentially. 
+
+#Initial installs:
+#Make sure you have access to the following programs (as binaries or versions that you can compile and install):
+
+	bwa http://bio-bwa.sourceforge.net/
+	samtools http://www.htslib.org/
+	prinseq++ https://github.com/Adrian-Cantu/PRINSEQ-plus-plus
+	trimmomatic http://www.usadellab.org/cms/?page=trimmomatic
+	EMBOSS (for water and needle) http://emboss.sourceforge.net/download/#Stable/
+	
+#MMBSearch software itself can be downloaded with other custom tools for this tutoral at:
+
+	https://github.com/malkovalab/MMBSearch
+	Clone the entire repository for all packages needed. 
+	See below commands to compile MMBSearch:
+		$tar -xzvf MMBSearch.tar.gz
+		$cd MMBSearch_source/MMBSearch
+		$make -f makefile
+
+#It is advisable to make a ~/bin/ folder and add it to you PATH if possible. 
+
+	cd ~
+	mkdir bin
+
+#Any binaries found in working directories (where you actually execute them) should be replaced with fresh binaries if you can't run them. 
+#To check this, try:
+	
+	$./bwa
+	$./samtools
+	$./mmbirFinder
+	$./water
+	$./needle
+	$./MMBSearch
+	etc...
+
+###################################################################################
+################### Section 1 – Extract reads, trim and filter ####################
+###################################################################################
+
+#Transfer reads files to HPC cluster or download directly to scratch space for pre-processing
+
+	$cp -r /PATH_TO_DIRECTORY_WITH_FASTQ_READS /scratch/PATH_TO_PREPROCESSING_LOCATION
+	$cd /scratch/PATH_TO_PREPROCESSING_LOCATION
+	
+#Preprocessing location should include the following (Found in package "preprocessing_tools.tar.gz" from MMBSearch github):
+
+	size:	File:
+	1467928  bwa
+		424  bwaMem.job
+		534  changeFastqHeader.sh
+		332  getInDels.sh
+		427  getUnaligned.sh
+		768  ICGCdownload.sh
+		1903  ppICGC.job
+		1866  preprocess_v3.job
+	4066077  samtools
+		259  TruSeq3-PE-2.fa
+		1567  extractReads.job
+	
+#also check that you have the following executables added to $PATH
+
+	trimmomatic-0.38.jar
+	prinseq++
+
+#NOTE: If you're doing this on the scratch space, keep a copy of all files on your userspace. Files in scratch are deleted frequently!!!
+
+#################################################
+#Follow these steps if processing from RAW READS#
+#################################################
+
+#If your reads are not alligned yet to a reference, use the bwaMEM script to align and sort them:
+
+	$vi bwaMEM.job
+	
+#Fill in the information and execute/submit the job script. 
+#When it has finished you should have a sam alignment file ".sam" and a sorted bam file ".sorted.bam"
+
+#Next, extract and filter unaligned reads and reads with indels from the alignment file using "extractReads.job". Fill in all files/locations and execute. 
+#make sure that the "TruSeq3-PE-2.fa" file is in the same directory as "extractReads.job"
+
+	$vi extractReads.job
+
+#You should now have a reads file ending in ".PPh.fq" in the location you specified. This will be your reads file for MMBSearch. Usually I put the reads file in a new "sample directory" for the next step. 
+#make an alignment directory for your processed reads and move them inside (you should name the alignment directory to match your sample's name). 
+
+	$cd 
+	$mkdir sample_aln_dir
+	$mv READS.PPh.fq sample_aln_dir
+
+#move your alignment directory to your mmbirFinder's "trial2" directory (trial2 should be in the same directory as the executable for MMBSearch)
+
+	$mv sample_aln_dir PATH_TO/trial2
+	
+########################################################
+#Follow these steps to download and process a bam file:#
+########################################################
+
+#open the ppICGC.job shell script file
+
+	$vi ppICGC.job
+	
+#If you need to download a bamfile to work with, enter the file and repository information and output information. For example:
+
+	#Input the repository, download ID, and a final location for the processed sample
+	repository="collab"
+	manifestID="cc3dd679-e7ff-43a0-9298-77f1b77f3c01"
+	finalLocation="~\/exp\/trial2"
+
+	#Input the name of the bamfile from the download (found on ICGC repository webpage for the sample)
+	bamin="4f645227a1d9ddf5921f3a4e38264957.bam"
+	#Input a name for the project directory (usually donor ID and sample type, e.g. DONORID_T for tumor).
+	pdir="DO49113_NT"
+	
+#NOTE: You will need to have the score-client installed and accessible in the path: ~/bin/score-client-2.0.0
+#To download controlled access data, score-client then needs to be configured with your access key (add the key to the config file located in ~/bin/score-client-2.0.0/conf/application.properties )
+
+#submit/execute the jobscript
+
+#if successful, you should have preprocessed reads in the location you specified. 
+
+
+###############################################################
+############ Section2 - Alignment by MMBSearch ################
+###############################################################
+
+#Go to the "exp" directory (downloaded as "exp_environment.tar.gz"). Check to make you you have all of the following files and directories:
+
+	bwa		//burrows-wheeler aligner executable
+	Chr17_TEST.job		//A job script to test functionality of the MMBSearch software. Submit and check results to ensure all dependencies are met. 
+	config_align.txt		//alignment configuration file (This is where you'll specify sample names and paths)
+	config_array		//directory containing all clustering configuration files. Generated for each run. DO NOT EDIT. 
+	config-chr17Aln.txt		//Alignment configuration for chr17_TEST
+	config-chr17Cluster.txt		//clustering configuration for chr17_TEST
+	config-split.txt		//Configuration file for splitting step 1 alignments by chromosome. 
+	Log		//directory for std output log files
+	Log2		//a directory for program output log files
+	MMBSearch		//the MMBSearch executable
+	MMBSearch_Alignment.job		//job submission script for first step (alignment)
+	MMBSearch_ClusterArray.job		//job submission script for second step (clustering). This is for an array job (multiple simultaneous processes). 
+	parProg		//executable for parallel alignments
+	reference_genome		//directory containing indexed reference genome(s). Please see notes at the end of Section2 for info on reference genome formatting. 
+	samtools		//samtools executable
+	trial2		//directory for samples (should contain the sample_aln_dir subdirectory that you created in the previous section)
+	water		//EMBOSS alignment executable. MUST COPY FROM FRESH INSTALL OF EMBOSS (typical path: bin/EMBOSS/EMBOSS-6.6.0/emboss/water). 
+	needle		//EMBOSS alignment executable. MUST COPY FROM FRESH INSTALL OF EMBOSS (typical path: bin/EMBOSS/EMBOSS-6.6.0/emboss/needle).
+
+#Before you attempt to process your own sample, you may choose to test MMBSearch by running the Chr17_TEST.job script. This will generate output in trial2/TEST_DATA
+#If everything is correctly set up, you should get 1012 results in the "final_bir_locs.txt file for the L40ins.fq dataset. These can be counted with the command:
+
+	$grep "####" final_bir_locs.txt | wc -l
+
+#Once you have verified that the program is functioning properly with the test data, continue processing your sample. 
+#open the configuration file in vi
+
+	$vi config_align.txt
+	
+#Change the following lines to match your sample's file locations: 
+
+	line 8: projectDirectory=trial2/sample_aln_dir
+
+	line 12: preReferenceFile=reference_genome/hg38_chr.fa
+
+	line 14: referenceFile=reference_genome/hg38_chr.fa
+
+	line 22: readsFile=READS.PPh.fq
+
+#Go to the bottom of the file for MPI/parallel settings and toggle on/off or change node/thread settings as needed
+#For single node alignment:
+
+	line 133: parMPI=false
+	
+	line 139: numNodes=1
+	
+	line 144: parTHREAD=true
+
+	line 149: numThreads=56
+	#or the number of threads available on the node you will use
+	
+#write and quit the config file
+
+#open the job submission script "MMBSearch_Alignment.job" in vi
+#Change the directive specifying the number of nodes and/or threads to match what you specified in the config file
+#For example, the following directive requests 56 threads on a single node for a non-parallel process:
+
+	line2: #$ -pe smp 56
+
+#The directive below requests 2 nodes with a total of 112 threads (56 threads each) for a parallel process (usually not needed):
+
+	line 2: #$ -pe 56cpn 112
+	
+#Make sure the node knows where to find all files:
+#Change the directory paths to match the location where you have the MMBSearch binary if it's different from what's below. 
+
+	PATH=$PATH:$HOME/bin:$PATH:$HOME/exp/
+	export PATH
+	cd $HOME/exp/
+
+#You can also change the names of the log files if you choose. This is good practice for each new sample you process, but not required. 
+
+	./MMBSearch config_align.txt > Log/Sample_Aln.log 2> Log/Sample_Aln.err
+	
+#You can change other things like queues, email settings, etc. at your own discretion 
+
+#write and quit 
+#use qsub to submit the job script to the scheduler 
+
+	$qsub MMBSearch_Alignment.job
+	
+#check the status with qstat
+
+	$qstat -u userid
+
+#Once the alignment is complete, move on to the next section. 
+
+################################################################################
+
+#Notes: 
+#The reference genome you use should be set up such that each chromosome is a new fasta entry.
+#Headers should be in the following format: 
+	>Chr01
+	>Chr02
+	>Chr03
+	...etc. 
+#WARNING: Using headers that are formatted as "Chr1", "Chr2," etc. will cause the program to crash or behave irratically after alignment. If you have used headers formatted in this way, you must replace "Chr1" with "Chr01" and "Chr2" with "Chr02" in the ".sam" output files to solve the problem.
+
+
+################################################################################
+#################### Section3 - re-splitting alignment outputs #################
+################################################################################
+
+#Run MMBSearch with config-split.txt to resplit the aligned reads by chromosome
+
+	$vi config-split.txt
+	#change the line below to your sample directory name:
+	projectDirectory=trial2/sample_aln_dir/
+	:wq
+	
+	#Run MMBSearch with this config file on the login node (Doesn't take but a few seconds to run)
+	$./MMBSearch config-split.txt
+	
+#Run the following script to create chromosome specific directories for each newly split set of files:
+
+	$./makeChrDir trial2/sample_aln_dir
+	
+#check your alingment directory - it should look like this:
+
+	$ls sample_aln_dir
+	bwaAligned.sam      chr1   chr12  chr15  chr18  chr20  chr23  chr3  chr6  chr9
+	bwaOutput_1.sam.gz  chr10  chr13  chr16  chr19  chr21  chr24  chr4  chr7  unaligned_2.sam
+	bwaOutput_2.sam     chr11  chr14  chr17  chr2   chr22  chr25  chr5  chr8
+	
+	$ls sample_aln_dir/chr1/
+	bwaAligned0000.sam  unaligned0000_2.sam
+	
+#Now you're ready to run the clustering and search algorithms
+
+#################################################################
+############ Section4 - Clustering and mmbir search #############
+#################################################################
+
+#Go back to the directory that contains the MMBSearch executable on the cluster. Check to make you you have the following files and directories:
+#water - smith-waterman aligner from EMBOSS programs suite 
+#needle - needleman-wunsch aligner from EMBOSS programs suite
+#MMBSearch_ClusterArray.job - job script for running all chromosomes simultaneously as an array job
+#config_array/ - contains all chromosome specific config files 
+
+#NOTE: if you are running this for the first time, you may have to install/compile emboss and copy the binaries for needle and water to your own workspace.
+#Find the whole EMBOSS suite of programs here: http://emboss.sourceforge.net/download/#Stable/
+
+#Because this part is run as single processes for each chromosome, we need to have a config file for each chromosome as well. 
+#rather than editing all 25 config files individually in vi, we will create copies as temporary config files and use sed to alter all of them at once within the job script. 
+
+	$vi MMBSearch_ClusterArray.job
+
+#Edit the following lines with your specifications: 
+	
+	current_sample='trial2\/sample_directory'
+	minCluster='minConsolidate=10'
+		#The minimum number of reads needed to form a cluster
+	maxCluster='maxConsolidate=500'
+		#maximum reads that can be clustered (Important if memory is not abundant). Program may crash if set too high. 
+	minInsLen='minBirLength=10'
+		#minimum length of the mmbir event found (no lower than 10bp for human genome). 
+	TemMatch='tempToBirPercentage=0.8'
+		#May reduce this ratio (number between 0 and 1) to find mmbir events with potentially multiple templates. 
+	Reference='reference_genome\/hg38_chr.fa'
+
+#For more advanced analyses you may want to change other parameters in the config files. This can be done with the sed command as shown in the job script. 
+
+#Before submitting the job, also check that you have the following directives: 
+
+	#$ -q all.q
+	#$ -pe smp 4
+	#$ -t 1-25:1
+	#$ -r y
+	#$ -ckpt user
+	#$ -j y
+	#$ -o /dev/null
+
+#The -t option works like an index for the 25 jobs you will run. "1-25" indicates the range of job IDs, while ":1" indicates the step. 
+#If you need to rerun any of the jobs in the array, you can do so by specifying that job's ID number instead of the full range: "-t 5" would run only job 5. 
+#Each process will be single threaded, but you should request several threads to ensure memory resource requirements are met (sometimes a single chr's job will fail because of too little memory). 
+	
+#Notice the variable ${SGE_TASK_ID} used throughout the script - This will be the Job ID for that specific task. In our case we're using the chromosome numbers specified at the end of each chromosome specific config file. 
+
+#Once everything is set up, you can submit the script
+
+	$qsub clusterArray.sh
+	$qstat -u userid
+	
+#Depending on the size and type of the genome being analyzed, this should take anywhere from 20 min to 6 hours to complete
+#Smaller chromosomes (Mitochondrial for example) will complete first, while larger chromosomes (Chr1) or those with the most mutations to analyze will take the longest typically. 
+
+#When all jobs are completed, go into the project directory and check that all chromosomes have results files
+#In particular, make sure that two files are present:
+	1. final_bir_locs.txt
+	2. consensus_reads.txt
+#These will be used to make any comparisons between samples in downstream analysis. 
+
+#################################################################
+############ Section5 - Optional: Comparing results #############
+#################################################################
+
+#If you have two samples that require comparison of results, this can be done using the "findCommons.py" script for each chromosome individually.
+#If you need to compare samples across all chromosomes, execute the "findCommons_allChromosomes.sh" found in the "post_processing.tar.gz" package. 
+
+	$./findCommons_allChromosomes.sh /PATH_TO/Sample1_Directory /PATH_TO/Sample2_directory
+	
+#This will compare each result's position in "final_bir_locs.txt" of sample1 to the positions covered by each consensus read in the "consensus_reads.txt" file of sample2 for each chromosome. 
+#Result positions that intersect with a consensus read are separated from those that do not intersect. The comparison is purely by position, and not sequence. 
+#You should get the following two files in Sample1_directory:
+
+	commons.txt		//results that did intersect with a consensus read and are therefore "common" between the two samples. 
+	non_commons.txt		//results that did not intersect with a consensus read and are therefore unique to sample1. 
+	
+#Note that sometimes the "findCommons.py" program will hang up if there are 0 results in final_bir_locs.txt for a sample being compared. 
+#If this occurs, kill the process (ctrl-c) and try running it a second time. 
+
+#Below is an example of the output with explanations for each line:
+
+####		//delimiter placed between results. 
+iBirStart: 2333928		//Start position for the result. 
+Consensus/cluster number: 27		//Consensus number corresponding to "consensus_reads.txt" output (also matches the cluster number in "clustered_locations2.txt" output file). 
+iDepth: 30		//Maximum read depth for the cluster (not the total number of reads in the cluster). 
+sBir: GGTAAAATACAAAAAAATTAGCCCGGCGTGGTGGTGGGCGC		//Sequence of the MMBIR event/insertion detected. 
+sBirReversed: GCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTACC		//Reverse-complement of the "sBir". 
+Inverted template		//template found was inverted as opposed to direct (direct template detection not yet operational).
+ref: CCATTCTCCTGCCTCAGCCTCCTGAGTAGCTGGGACTACAGGCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTTTTAGTAGAGACGGGGTTTCACTGTGTTAGCCAGGATGGTCTCGATCTCCTGACCTCGCGATCCGCCGGCCTTGGCCTCCTAAAGTGCTGGGATTACAGGCGTGAGCCACCGCGCCCAGCCTAGATATATTTTTAGAATTTTTTTTTAAATTGAAATATAGATACAGAAAAGCACATC		//Reference sequence spanning the region of the MMBIR - this is the length of sequence that was searched for a template.
+bir: CCATTCTCCTGCCTCAGCCTCCTGAGTAGCTGGGACTACAGGCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTTTTAGTAGAGACGGGGTTTCACTGTGTTAGCCAGGATGGTAAAATACAAAAAAATTAGCCCGGCGTGGTGGTGGGCGCCTCTCGATCTCCTGACCTCGCGATCCGCCGGCCTTGGCCTCCTAAAGTGCTGGGATTACAGGCGTGAGCCACCGCGCCCAGCCTAGATATATTTTTAGAATTTTTTTTTAAATTGAAATATAG		//Consensus sequence created from the cluster of reads that contain the MMBIR event. Same sequence as in the "consensus_reads.txt" file. 
+TEM: GCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTC		//Template sequence detected. 
+Microhomology Insertion: AGGATGGTAAAATACAAAAAAATTAGCCCGGCGTGGTGGTGGGCGCCTCTCGA
+Microhomology template: TACTAAAAAAATACAAAAAAATTAGCCCGGCGTGGTGGTGGGCGCCTGTAGTC		//Shows the MMBIR insertion compared to the template location in the reference - function not yet completed and may not always work as expected. It's best to confirm microhomology manually.  
+readStart: 2333928		//duplicate entry to "iBirStart"
+ref: CCATTCTCCTGCCTCAGCCTCCTGAGTAGCTGGGACTACAGGCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTTTTAGTAGAGACGGGGTTTCACTGTGTTAGCCAGGATGGTCTCGATCTCCTGACCTCGCGATCCGCCGGCCTTGGCCTCCTAAAGTGCTGGGATTACAGGCGTGAGCCACCGCGCCCAGCCTAGATATATTTTTAGAATTTTTTTTTAAATTGAAATATAGATACAGAAAAGCACATC		//Duplicate entry to "ref".
+bir: GCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTACC		//Duplicate entry to "sBirReversed".
+0, 37, 41, 41, 78,		//Numbers output by program - non-informative. 
+GCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTT
+GCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTT
+**************************************		//Alignment of MMBIR sequence detected in consensus/"bir" entry (bottom) to template found in reference/"ref" entry (Top) Asterisk indicates matching base. Mismatches are left blank, and gaps are indicated with a "-" character. 
+
+
+
+
+
+
+
+	
+
+	
+
+
+
+
+
+
+
+
+
