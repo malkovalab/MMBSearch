@@ -12,7 +12,7 @@
 	bwa http://bio-bwa.sourceforge.net/
 	samtools http://www.htslib.org/
 	prinseq++ https://github.com/Adrian-Cantu/PRINSEQ-plus-plus
-	trimmomatic http://www.usadellab.org/cms/?page=trimmomatic
+	trimmomatic http://www.usadellab.org/cms/?page=trimmomatic (This pipeline is set up to work with version 0.38)
 	EMBOSS (for water and needle) http://emboss.sourceforge.net/download/#Stable/
 	
 #MMBSearch software itself can be downloaded with other custom tools for this tutoral at:
@@ -69,7 +69,7 @@
 	trimmomatic-0.38.jar
 	prinseq++
 
-#NOTE: If you're doing this on the scratch space, keep a copy of all files on your userspace. Files in scratch are deleted frequently!!!
+#NOTE: Version is important for trimmomatic! If you are using a different version (e.g. 0.39), you will need to update it in the "extractReads.job" script. Also, if you're doing this on the scratch space, keep a copy of all files on your userspace. Files in scratch are deleted frequently!!!
 
 #################################################
 #Follow these steps if processing from RAW READS#
@@ -84,6 +84,7 @@
 
 #Next, extract and filter unaligned reads and reads with indels from the alignment file using "extractReads.job". Fill in all files/locations and execute. 
 #make sure that the "TruSeq3-PE-2.fa" file is in the same directory as "extractReads.job"
+#also check that trimmomatic and prinseq++ match the versions you currently have available. 
 
 	$vi extractReads.job
 
