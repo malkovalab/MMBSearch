@@ -133,12 +133,9 @@
 
 #Go to the "exp" directory (downloaded as "exp_environment.tar.gz"). Check to make you you have all of the following files and directories:
 
-	bwa		//burrows-wheeler aligner executable
-	Chr17_TEST.job		//A job script to test functionality of the MMBSearch software. Submit and check results to ensure all dependencies are met. 
+	bwa		//burrows-wheeler aligner executable 
 	config_align.txt		//alignment configuration file (This is where you'll specify sample names and paths)
-	config_array		//directory containing all clustering configuration files. Generated for each run. DO NOT EDIT. 
-	config-chr17Aln.txt		//Alignment configuration for chr17_TEST
-	config-chr17Cluster.txt		//clustering configuration for chr17_TEST
+	config_array		//directory containing all clustering configuration files. Generated for each run. DO NOT EDIT. 	
 	config-split.txt		//Configuration file for splitting step 1 alignments by chromosome. 
 	Log		//directory for std output log files
 	Log2		//a directory for program output log files
@@ -152,12 +149,8 @@
 	water		//EMBOSS alignment executable. MUST COPY FROM FRESH INSTALL OF EMBOSS (typical path: bin/EMBOSS/EMBOSS-6.6.0/emboss/water). 
 	needle		//EMBOSS alignment executable. MUST COPY FROM FRESH INSTALL OF EMBOSS (typical path: bin/EMBOSS/EMBOSS-6.6.0/emboss/needle).
 
-#Before you attempt to process your own sample, you may choose to test MMBSearch by running the Chr17_TEST.job script. This will generate output in trial2/TEST_DATA
-#If everything is correctly set up, you should get 1012 results in the "final_bir_locs.txt file for the L40ins.fq dataset. These can be counted with the command:
 
-	$grep "####" final_bir_locs.txt | wc -l
-
-#Once you have verified that the program is functioning properly with the test data, continue processing your sample. 
+#Begin with the process of alignment. 
 #open the configuration file in vi
 
 	$vi config_align.txt
