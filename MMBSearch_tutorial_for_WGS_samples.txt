@@ -256,7 +256,7 @@
 #Now you're ready to run the clustering and search algorithms
 
 #################################################################
-############ Section4 - Clustering and mmbir search #############
+####### Section4 - Clustering and mmbir (MMB-TI) search #########
 #################################################################
 
 #Go back to the directory that contains the MMBSearch executable on the cluster. Check to make you you have the following files and directories:
@@ -343,21 +343,21 @@
 iBirStart: 2333928		//Start position for the result. 
 Consensus/cluster number: 27		//Consensus number corresponding to "consensus_reads.txt" output (also matches the cluster number in "clustered_locations2.txt" output file). 
 iDepth: 30		//Maximum read depth for the cluster (not the total number of reads in the cluster). 
-sBir: GGTAAAATACAAAAAAATTAGCCCGGCGTGGTGGTGGGCGC		//Sequence of the MMBIR event/insertion detected. 
+sBir: GGTAAAATACAAAAAAATTAGCCCGGCGTGGTGGTGGGCGC		//Sequence of the MMB-TI event/insertion detected. 
 sBirReversed: GCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTACC		//Reverse-complement of the "sBir". 
 Inverted template		//template found was inverted as opposed to direct (direct template detection not yet operational).
-ref: CCATTCTCCTGCCTCAGCCTCCTGAGTAGCTGGGACTACAGGCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTTTTAGTAGAGACGGGGTTTCACTGTGTTAGCCAGGATGGTCTCGATCTCCTGACCTCGCGATCCGCCGGCCTTGGCCTCCTAAAGTGCTGGGATTACAGGCGTGAGCCACCGCGCCCAGCCTAGATATATTTTTAGAATTTTTTTTTAAATTGAAATATAGATACAGAAAAGCACATC		//Reference sequence spanning the region of the MMBIR - this is the length of sequence that was searched for a template.
-bir: CCATTCTCCTGCCTCAGCCTCCTGAGTAGCTGGGACTACAGGCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTTTTAGTAGAGACGGGGTTTCACTGTGTTAGCCAGGATGGTAAAATACAAAAAAATTAGCCCGGCGTGGTGGTGGGCGCCTCTCGATCTCCTGACCTCGCGATCCGCCGGCCTTGGCCTCCTAAAGTGCTGGGATTACAGGCGTGAGCCACCGCGCCCAGCCTAGATATATTTTTAGAATTTTTTTTTAAATTGAAATATAG		//Consensus sequence created from the cluster of reads that contain the MMBIR event. Same sequence as in the "consensus_reads.txt" file. 
+ref: CCATTCTCCTGCCTCAGCCTCCTGAGTAGCTGGGACTACAGGCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTTTTAGTAGAGACGGGGTTTCACTGTGTTAGCCAGGATGGTCTCGATCTCCTGACCTCGCGATCCGCCGGCCTTGGCCTCCTAAAGTGCTGGGATTACAGGCGTGAGCCACCGCGCCCAGCCTAGATATATTTTTAGAATTTTTTTTTAAATTGAAATATAGATACAGAAAAGCACATC		//Reference sequence spanning the region of the MMB-TI - this is the length of sequence that was searched for a template.
+bir: CCATTCTCCTGCCTCAGCCTCCTGAGTAGCTGGGACTACAGGCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTTTTAGTAGAGACGGGGTTTCACTGTGTTAGCCAGGATGGTAAAATACAAAAAAATTAGCCCGGCGTGGTGGTGGGCGCCTCTCGATCTCCTGACCTCGCGATCCGCCGGCCTTGGCCTCCTAAAGTGCTGGGATTACAGGCGTGAGCCACCGCGCCCAGCCTAGATATATTTTTAGAATTTTTTTTTAAATTGAAATATAG		//Consensus sequence created from the cluster of reads that contain the MMB-TI event. Same sequence as in the "consensus_reads.txt" file. 
 TEM: GCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTC		//Template sequence detected. 
 Microhomology Insertion: AGGATGGTAAAATACAAAAAAATTAGCCCGGCGTGGTGGTGGGCGCCTCTCGA
-Microhomology template: TACTAAAAAAATACAAAAAAATTAGCCCGGCGTGGTGGTGGGCGCCTGTAGTC		//Shows the MMBIR insertion compared to the template location in the reference - function not yet completed and may not always work as expected. It's best to confirm microhomology manually.  
+Microhomology template: TACTAAAAAAATACAAAAAAATTAGCCCGGCGTGGTGGTGGGCGCCTGTAGTC		//Shows the MMB-TI compared to the template location in the reference - function not yet completed and may not always work as expected. It's best to confirm microhomology manually.  
 readStart: 2333928		//duplicate entry to "iBirStart"
 ref: CCATTCTCCTGCCTCAGCCTCCTGAGTAGCTGGGACTACAGGCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTTTTAGTAGAGACGGGGTTTCACTGTGTTAGCCAGGATGGTCTCGATCTCCTGACCTCGCGATCCGCCGGCCTTGGCCTCCTAAAGTGCTGGGATTACAGGCGTGAGCCACCGCGCCCAGCCTAGATATATTTTTAGAATTTTTTTTTAAATTGAAATATAGATACAGAAAAGCACATC		//Duplicate entry to "ref".
 bir: GCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTTACC		//Duplicate entry to "sBirReversed".
 0, 37, 41, 41, 78,		//Numbers output by program - non-informative. 
 GCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTT
 GCGCCCACCACCACGCCGGGCTAATTTTTTTGTATTTT
-**************************************		//Alignment of MMBIR sequence detected in consensus/"bir" entry (bottom) to template found in reference/"ref" entry (Top) Asterisk indicates matching base. Mismatches are left blank, and gaps are indicated with a "-" character. 
+**************************************		//Alignment of MMB-TI sequence detected in consensus/"bir" entry (bottom) to template found in reference/"ref" entry (Top) Asterisk indicates matching base. Mismatches are left blank, and gaps are indicated with a "-" character. 
 
 
 
