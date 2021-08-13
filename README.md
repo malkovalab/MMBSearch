@@ -14,7 +14,7 @@ preprocessing_tools.tar.gz - Tools for downloading and pre-filtering reads and a
 post_processing.tar.gz - Tools for drawing comparisons between samples analyzed by MMBSearch. See tutorial for usage instructions. 
 
 # MMBmaker
-MMBmaker.zip - Code for generating synthetic MMBIR events for testing purposes. 
+MMBmaker.zip - Code for generating synthetic MMBIR/MMB-TI events for testing purposes. 
 
 # Tutorial
 MMBSearch_tutorial_for_WGS_samples.txt - Detailed Tutorial for setup and standard analysis of whole genome sequencing samples with MMBSearch. 
